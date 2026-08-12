@@ -1,0 +1,32 @@
+#cloud-config
+package_update: true
+packages:
+  - nginx
+
+write_files:
+  - path: /usr/local/bin/render-index.sh
+    permissions: "0755"
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+
+      # Yandex Cloud отдаёт метаданные в формате, совместимом с Google Compute Engine.
+      INSTANCE_ID=$(curl -s -H "Metadata-Flavor: Google" http://169.254.169.254/computeMetadata/v1/instance/id)
+      INTERNAL_IP=$(hostname -I | awk '{print $1}')
+
+      cat > /var/www/html/index.nginx-debian.html <<HTML
+      <!DOCTYPE html>
+      <html>
+      <head><title>${server_name}</title></head>
+      <body style="font-family: sans-serif; margin: 40px;">
+        <h1>nginx — $${INSTANCE_ID}</h1>
+        <p>server_name: ${server_name}</p>
+        <p>internal ip: $${INTERNAL_IP}</p>
+      </body>
+      </html>
+      HTML
+
+runcmd:
+  - /usr/local/bin/render-index.sh
+  - systemctl restart nginx
+  - systemctl enable nginx
