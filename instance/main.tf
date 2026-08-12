@@ -59,7 +59,10 @@ resource "yandex_compute_instance" "this" {
   folder_id   = var.folder_id
   platform_id = "standard-v3"
   labels      = var.labels
-  preemptible = var.preemptible
+
+  scheduling_policy {
+    preemptible = var.preemptible
+  }
 
   resources {
     cores  = var.cores
@@ -80,14 +83,12 @@ resource "yandex_compute_instance" "this" {
   }
 
   metadata = {
-    ssh-keys = "ubuntu:${var.ssh_public_key}"
+    ssh-keys  = "ubuntu:${var.ssh_public_key}"
     user-data = templatefile("${path.module}/cloud-init.yaml.tftpl", {
       server_name = var.name
     })
   }
 
-  # image_id меняется при выходе новых версий ubuntu-2204-lts —
-  # не хотим пересоздавать инстанс на каждый terraform plan из-за этого.
   lifecycle {
     ignore_changes = [boot_disk[0].initialize_params[0].image_id]
   }
